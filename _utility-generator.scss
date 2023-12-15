@@ -1,0 +1,278 @@
+@use "sass:list";
+@use "sass:map";
+@use "sass:meta";
+@use "sass:string";
+
+$grid-breakpoints: (
+  xs: 0,
+  sm: 576px,
+  md: 768px,
+  lg: 992px,
+  xl: 1200px,
+  xxl: 1400px
+) !default;
+
+@function -create-media-queries-map() {
+  $map: (
+    light: "(prefers-color-scheme: light)",
+    dark: "(prefers-color-scheme: dark)",
+    pointer: "(pointer: fine)",
+    touch: "(pointer: coarse)",
+    contrast: "(prefers-contrast: more)",
+    reduce: "(prefers-reduced-motion: reduce)",
+    motion: "(prefers-reduced-motion: no-preference)",
+    print: "print"
+  );
+
+  $responsive: ();
+  @each $key, $value in $grid-breakpoints {
+    @if $value != 0 {
+      $responsive: map.set($responsive, $key, "(min-width: #{$value})");
+    }
+  }
+
+  @return map.set($map, responsive, $responsive);
+}
+
+$-media-map: -create-media-queries-map() !default;
+
+// Rewrites the specified selector targets and returns the modified selectors.
+// The function modifies the last segment of the each selector only.
+//
+// @selectors The list of selectors to modify.
+// @option    The option name to append to the selector as a suffix.
+// @returns   The list of modified selectors.
+//
+// @example
+// $selector: -append-option(".w", "100");         -->  ".w-100"
+// $selector: -append-option(".parent .w", "100"); -->  ".parent .w-100"
+// $selector: -append-option(".w");                -->  ".w"
+// $selector: -append-option(".w", "");            -->  ".w"
+// $selector: -append-option(".w", null);          -->  ".w"
+@function -append-option($selectors, $option) {
+  $result: ();
+
+  @if $option == null or $option == "" {
+    @return $selectors;
+  }
+
+  @each $selector in $selectors {
+    $target: list.nth($selector, -1);
+    $selector: list.set-nth($selector, -1, "#{$target}-#{$option}");
+    $result: list.append($result, $selector, comma);
+  }
+
+  @return $result;
+}
+
+@function -append-variant($selectors, $variant, $is-media-query: false) {
+  $result: ();
+
+  @each $selector in $selectors {
+    // The last segment is our target selector
+    // which we updating it later with the modified value
+    $target: list.nth($selector, -1);
+
+    // We can handle class selector only
+    @if meta.type-of($target) != "string" or string.index($target, ".") != 1 {
+      @error "Expected class selector";
+    }
+
+    // Add variant prefix
+    //    .class -> .focus\:class
+    $target: string.insert($target, "#{$variant}\\:", 2);
+
+    @if string.index($variant, "group-") {
+      // Update last segment of the selector
+      //    .cls           -> .group:hover
+      //    .parent .child -> .parent .group:hover
+      $selector: list.set-nth($selector, -1, ".group:#{string.slice($variant, 7)}");
+
+      // Add modified target to the selector
+      //    .group:hover         -> .group-hover\:cls
+      //    .parent .group:hover -> .parent .group:hover .group-hover\:child
+      $selector: list.append($selector, $target);
+    }
+    @else {
+      @if not $is-media-query {
+        // Add variant as a pseudo-class
+        //    .focus\:class:focus
+        $target: $target + ":" + $variant;
+      }
+
+      // Update the target
+      $selector: list.set-nth($selector, -1, $target);
+    }
+
+    $result: list.append($result, $selector, comma);
+  }
+
+  @return $result;
+}
+
+@mixin -options($options, $variants...) {
+  $media-queries: ();
+  $map: ();
+
+  @each $variant in $variants {
+    $media: map.get($-media-map, $variant);
+
+    @if meta.type-of($media) == "string" {
+      $media-queries: map.set($media-queries, $variant, $media);
+    }
+    @else if $media {
+      $media-queries: map.merge($media-queries, $media);
+    }
+  }
+
+  @each $k, $v in $options {
+    $root: -append-option(&, $k);
+    $list: ($root);
+
+    @each $variant in $variants {
+      @if not map.has-key($-media-map, $variant) {
+        $s: -append-variant($root, $variant);
+        $list: list.join($list, $s);
+      }
+    }
+
+    @at-root #{$list} {
+      @content($k, $v);
+    }
+
+    $map: map.set($map, $k, $list);
+  }
+
+  @if list.length($media-queries) {
+    @each $media-key, $media-query in $media-queries {
+      @if $media-key != "print" {
+        @media #{$media-query} {
+          @each $k, $selectors in $map {
+            $s: -append-variant($selectors, $media-key, true);
+            @at-root #{$s} {
+              $v: null;
+
+              @if meta.type-of($options) == map {
+                $v: map.get($options, $k);
+              }
+
+              @content($k, $v);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  @if map.has-key($media-queries, "print") {
+    @media print {
+      @each $k, $v in $options {
+        $s: -append-option(&, $k);
+        $s: -append-variant($s, "print", true);
+
+        @at-root #{$s} {
+          @content($k, $v);
+        }
+      }
+    }
+  }
+}
+
+// Generates variants.
+// @variants The list of variants.
+@mixin variants($variants...) {
+  $media-queries: ();
+
+  // Initialize with current selector
+  $selectors: (&);
+
+  @each $variant in $variants {
+    $media: map.get($-media-map, $variant);
+
+    @if not $media {
+      // 1. Create a variant for the current selector,
+      // 2. Add the created variant to the selector collection
+      $s: -append-variant(&, $variant);
+      $selectors: list.join($selectors, $s);
+    }
+    @else if meta.type-of($media) == "string" {
+      $media-queries: map.set($media-queries, $variant, $media);
+    }
+    @else {
+      $media-queries: map.merge($media-queries, $media);
+    }
+  }
+
+  @at-root #{$selectors} {
+    @content;
+  }
+
+  @if list.length($media-queries) {
+    @each $key, $value in $media-queries {
+      @if $key != "print" {
+        @media #{$value} {
+          $s: -append-variant($selectors, $key, /* $is-media-query: */ true);
+          @at-root #{$s} {
+            @content;
+          }
+        }
+      }
+    }
+  }
+
+  @if map.has-key($media-queries, "print") {
+    @media print {
+      $s: -append-variant(&, "print", true);
+      @at-root #{$s} {
+        @content;
+      }
+    }
+  }
+}
+
+@mixin options($options, $variants...) {
+  @if & {
+    @include -options($options, $variants...) using ($k, $v) {
+      @content($k, $v);
+    }
+  }
+  @else {
+    @each $key, $value in $options {
+      .#{$key} {
+        @include variants($variants...) {
+          @content($key, $value);
+        }
+      }
+    }
+  }
+}
+
+@mixin responsive() {
+  @include variants(responsive) {
+    @content;
+  }
+}
+
+@mixin light() {
+  @include variants(light) {
+    @content;
+  }
+}
+
+@mixin dark() {
+  @include variants(dark) {
+    @content;
+  }
+}
+
+@mixin colorschemes() {
+  @include variants(light, dark) {
+    @content;
+  }
+}
+
+@mixin print() {
+  @include variants(print) {
+    @content;
+  }
+}
