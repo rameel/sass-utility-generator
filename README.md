@@ -1,6 +1,6 @@
 # Utility Generator for SCSS
 
-This utility simplifies the process of creating utility classes in SASS/SCSS, automating the generation of styles based on variants and options.
+A Sass utility class generator with support for options and variants.
 
 ## Variants
 
