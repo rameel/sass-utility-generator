@@ -82,7 +82,7 @@ $-media-map: -create-media-queries-map() !default;
     //    .class -> .focus\:class
     $target: string.insert($target, "#{$variant}\\:", 2);
 
-    @if string.index($variant, "group-") {
+    @if string.index($variant, "group-") == 1 {
       // Update last segment of the selector
       //    .cls           -> .group:hover
       //    .parent .child -> .parent .group:hover
