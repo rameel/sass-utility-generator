@@ -26,6 +26,10 @@ $grid-breakpoints: (
 
   $responsive: ();
   @each $key, $value in $grid-breakpoints {
+    @if map.has-key($map, $key) or $key == responsive {
+      @error "Breakpoint `#{$key}` conflicts with a built-in variant.";
+    }
+
     @if $value != 0 {
       $responsive: map.set($responsive, $key, "(min-width: #{$value})");
     }
