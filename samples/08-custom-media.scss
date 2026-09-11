@@ -1,0 +1,12 @@
+@use "../utility-generator" as utilities with (
+  $custom-media-queries: (
+    landscape: "(orientation: landscape)",
+    retina: "(min-resolution: 2dppx)"
+  )
+);
+
+.visible {
+  @include utilities.variants(landscape, retina) {
+    visibility: visible;
+  }
+}

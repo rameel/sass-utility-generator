@@ -1,0 +1,7 @@
+@use "../utility-generator" as utilities;
+
+.card-title {
+  @include utilities.variants(group-hover) {
+    color: #c00;
+  }
+}

@@ -1,0 +1,7 @@
+@use "../utility-generator" as utilities;
+
+.text {
+  @include utilities.options((red: #c00)) using ($name, $value) {
+    color: $value;
+  }
+}

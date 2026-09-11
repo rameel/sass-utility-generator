@@ -1,17 +1,16 @@
 # Sass Utility Generator
 
-A small Sass module for generating utility classes from lists and maps, with
-support for state, group, media-query, and responsive variants.
+A small Sass module for generating utility classes from lists and maps,
+with support for state, group, media-query, and responsive variants.
 
-The module provides the generator, not a predefined utility framework. You
-choose the class names, values, and CSS declarations that your project needs.
+The module provides the generator, not a predefined utility framework.
+You choose the class names, values, and CSS declarations that your project needs.
 
 ## Requirements
 
 The generator uses the Sass module system and built-in modules, so it requires
-[Dart Sass](https://sass-lang.com/dart-sass/). Make
-`_utility-generator.scss` available on your Sass load path or place it next to
-the stylesheet that uses it.
+[Dart Sass](https://sass-lang.com/dart-sass/). Make `_utility-generator.scss` available
+on your Sass load path or place it next to the stylesheet that uses it.
 
 ## Quick start
 
@@ -45,6 +44,26 @@ The generated classes can then be used directly in markup:
 <button class="opacity-50 hover:opacity-100">...</button>
 ```
 
+## Samples
+
+The standalone samples build on one another in this order:
+
+1. [Basic utility](samples/01-basic-utility.scss)
+2. [List options](samples/02-list-options.scss)
+3. [Map options](samples/03-map-options.scss)
+4. [State variants](samples/04-state-variants.scss)
+5. [Group variant](samples/05-group-variant.scss)
+6. [Responsive utilities](samples/06-responsive.scss)
+7. [Custom breakpoints](samples/07-custom-breakpoints.scss)
+8. [Custom media variants](samples/08-custom-media.scss)
+9. [Combining variants](samples/09-combining-variants.scss)
+
+Compile all samples to separate files in `samples/css/`:
+
+```sh
+pnpm build:samples
+```
+
 ## Mental model
 
 The generator builds class names in three steps:
@@ -60,8 +79,7 @@ they do not replace the base selector.
 
 ## Variants
 
-Use `variants($variants...)` inside a class selector to add conditional forms
-of the same utility:
+Use `variants($variants...)` inside a class selector to add conditional forms of the same utility:
 
 ```scss
 @use "utility-generator" as utilities;
@@ -83,10 +101,10 @@ Generated CSS:
 }
 ```
 
-Names that are not registered media variants are emitted as CSS
-pseudo-classes. The generator does not validate pseudo-class names, which
-allows new and vendor-specific pseudo-classes but also means that misspellings
-are not detected.
+Names that are not registered media variants are emitted as CSS pseudo-classes.
+The generator does not validate pseudo-class names,
+which allows new and vendor-specific pseudo-classes but also means
+that misspellings are not detected.
 
 ### Group variants
 
@@ -129,8 +147,8 @@ Use `.group` on the parent and the generated variant class on a descendant:
 | `print`      | `print`                                   |
 | `responsive` | All configured non-zero breakpoints       |
 
-`pointer` and `touch` describe the primary pointing device. They do not test
-whether any fine or coarse pointer exists on a hybrid device.
+`pointer` and `touch` describe the primary pointing device.
+They do not test whether any fine or coarse pointer exists on a hybrid device.
 
 Media variants are emitted in their own `@media` rules:
 
@@ -160,9 +178,8 @@ Media variants are emitted in their own `@media` rules:
 }
 ```
 
-`print` intentionally does not combine with pseudo-class variants passed in
-the same call. Interactive states such as `hover` and `focus` have no useful
-meaning in printed output.
+`print` intentionally does not combine with pseudo-class variants passed in the same call.
+Interactive states such as `hover` and `focus` have no useful meaning in printed output.
 
 ## Responsive variants
 
@@ -190,10 +207,10 @@ The default breakpoints are:
 )
 ```
 
-A zero value represents the base selector and does not generate a prefixed
-class. With the default configuration, `.display-block` covers `xs`, while
-`.sm\:display-block` through `.xxl\:display-block` are emitted in min-width
-media queries.
+A zero value represents the base selector and does not generate a prefixed class.
+With the default configuration, `.display-block` covers `xs`, 
+while `.sm\:display-block` through `.xxl\:display-block` are emitted
+in min-width media queries.
 
 Configure breakpoints when loading the module:
 
@@ -207,8 +224,8 @@ Configure breakpoints when loading the module:
 );
 ```
 
-Breakpoint values must be zero or non-negative Sass lengths. Breakpoint names
-must not conflict with built-in or custom media variant names.
+Breakpoint values must be zero or non-negative Sass lengths.
+Breakpoint names must not conflict with built-in or custom media variant names.
 
 ## Custom media variants
 
@@ -229,13 +246,11 @@ Add project-specific media variants through `$custom-media-queries`:
 }
 ```
 
-Media query values must be strings. Custom names cannot replace built-in
-variants or `responsive`.
+Media query values must be strings. Custom names cannot replace built-in variants or `responsive`.
 
 ## Options
 
-Use `options($options, $variants...)` to generate several utilities from the
-same declaration block.
+Use `options($options, $variants...)` to generate several utilities from the same declaration block.
 
 ### Sass lists
 
@@ -253,8 +268,7 @@ This generates `.display-block`, `.display-inline`, and `.display-none`, plus
 their responsive variants. The rest argument is used because the content block
 receives the option key and value; list options have no separate mapped value.
 
-Use a map instead of a structured list when a CSS value contains multiple
-parts.
+Use a map instead of a structured list when a CSS value contains multiple parts.
 
 ### Sass maps
 
@@ -275,8 +289,8 @@ A map separates the class suffix from its CSS value:
 
 This generates `.text-muted`, `.text-danger`, and their `hover:` variants.
 
-Inside a selector, a `null` or empty-string key leaves the selector
-unsuffixed. This is useful for a default value:
+Inside a selector, a `null` or empty-string key leaves the selector unsuffixed.
+This is useful for a default value:
 
 ```scss
 .rounded {
@@ -298,13 +312,12 @@ At the stylesheet root, map keys are complete class names rather than suffixes:
 }
 ```
 
-This generates `.visible` and `.invisible`. Root options require non-empty
-keys because there is no enclosing selector to use as a class name.
+This generates `.visible` and `.invisible`. Root options require non-empty keys
+because there is no enclosing selector to use as a class name.
 
 ## Combining variants
 
-Pseudo-class variants and media variants passed to one mixin are combined
-automatically:
+Pseudo-class variants and media variants passed to one mixin are combined automatically:
 
 ```scss
 .text-red {
@@ -314,8 +327,8 @@ automatically:
 }
 ```
 
-This emits the base and `hover:` selectors, then their `dark:` counterparts in
-the dark media query.
+This emits the base and `hover:` selectors, then their `dark:` counterparts
+in the dark media query.
 
 Multiple media variants passed to one call are alternatives and produce
 separate media rules. Nest mixins when the conditions must be combined with
@@ -331,8 +344,7 @@ separate media rules. Nest mixins when the conditions must be combined with
 }
 ```
 
-In addition to the separate responsive and color-scheme rules, this produces
-rules such as:
+In addition to the separate responsive and color-scheme rules, this produces rules such as:
 
 ```css
 @media (min-width: 576px) and (prefers-color-scheme: dark) {
@@ -342,9 +354,8 @@ rules such as:
 }
 ```
 
-The innermost mixin contributes the leftmost class prefix. Reversing the
-nesting above produces `.sm\:dark\:text-red` instead. This affects class names,
-not CSS cascade precedence.
+The innermost mixin contributes the leftmost class prefix. Reversing the nesting above
+produces `.sm\:dark\:text-red` instead. This affects class names, not CSS cascade precedence.
 
 ## Shorthands
 
@@ -366,11 +377,9 @@ not CSS cascade precedence.
 
 ## Selector rules and limitations
 
-- Call `variants()` inside a selector. Root-level variant generation is not
-  supported.
+- Call `variants()` inside a selector. Root-level variant generation is not supported.
 - Start generation from a class selector. Selector lists and descendant
-  selectors work when each final target is a class, such as
-  `.card .title, .dialog .title`.
+  selectors work when each final target is a class, such as `.card .title, .dialog .title`.
 - Put pseudo-elements inside the generated content block rather than invoking
   a generator on `.class::before`:
 
@@ -408,10 +417,11 @@ not CSS cascade precedence.
 
 ## Development
 
-Install dependencies and run the test suite:
+Install dependencies, compile each sample to `samples/css/`, and run the test suite:
 
 ```sh
 pnpm install
+pnpm build:samples
 pnpm test
 ```
 

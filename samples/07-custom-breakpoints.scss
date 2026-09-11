@@ -1,0 +1,13 @@
+@use "../utility-generator" as utilities with (
+  $grid-breakpoints: (
+    mobile: 0,
+    tablet: 48rem,
+    desktop: 75rem
+  )
+);
+
+.columns {
+  @include utilities.options((1: 1, 2: 2), responsive) using ($name, $value) {
+    grid-template-columns: repeat($value, minmax(0, 1fr));
+  }
+}
