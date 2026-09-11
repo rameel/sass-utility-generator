@@ -6,9 +6,19 @@ import { compileString as compile_sass } from "sass";
 
 const project_root = resolve(dirname(file_url_to_path(import.meta.url)), "..");
 
-function compile(source, breakpoints) {
-  const configuration = breakpoints
-    ? ` with ($grid-breakpoints: ${breakpoints})`
+function compile(source, breakpoints, media_queries) {
+  const settings = [];
+
+  if (breakpoints) {
+    settings.push(`$grid-breakpoints: ${breakpoints}`);
+  }
+
+  if (media_queries) {
+    settings.push(`$custom-media-queries: ${media_queries}`);
+  }
+
+  const configuration = settings.length
+    ? ` with (${settings.join(", ")})`
     : "";
 
   return compile_sass(
@@ -207,10 +217,73 @@ test("reserved breakpoint names are rejected", () => {
   for (const name of reservedNames) {
     assert.throws(
       () => compile("", `(${name}: 900px)`),
-      new RegExp(`Breakpoint \`${name}\` conflicts with a built-in variant\\.`),
+      new RegExp(`Breakpoint \`${name}\` conflicts with a media variant\\.`),
       name,
     );
   }
+});
+
+test("breakpoints must be zero or non-negative lengths", () => {
+  for (const value of ["null", "false", "400", "-1px"]) {
+    assert.throws(
+      () => compile("", `(invalid: ${value})`),
+      /Breakpoint `invalid` must be zero or a non-negative length\./,
+      value,
+    );
+  }
+});
+
+test("breakpoints must be a map", () => {
+  assert.throws(
+    () => compile("", "(phone 400px, wide 900px)"),
+    /\$grid-breakpoints must be a map\./,
+  );
+});
+
+test("custom media variants are configurable", () => {
+  const actual = compile(
+    `
+      .x {
+        @include utilities.variants(landscape) {
+          color: red;
+        }
+      }
+    `,
+    null,
+    `(landscape: "(orientation: landscape)")`,
+  );
+
+  assert.equal(
+    actual,
+    expected_media_variant("landscape", "(orientation: landscape)"),
+  );
+});
+
+test("custom media variants reject reserved names and non-string queries", () => {
+  assert.throws(
+    () => compile("", null, `(dark: "(color)")`),
+    /Custom media variant `dark` conflicts with a built-in variant\./,
+  );
+  assert.throws(
+    () => compile("", null, `(responsive: "(color)")`),
+    /Custom media variant `responsive` conflicts with a built-in variant\./,
+  );
+  assert.throws(
+    () => compile("", null, `(landscape: 1)`),
+    /Custom media query `landscape` must be a string\./,
+  );
+});
+
+test("breakpoint names cannot shadow custom media variants", () => {
+  assert.throws(
+    () =>
+      compile(
+        "",
+        `(landscape: 900px)`,
+        `(landscape: "(orientation: landscape)")`,
+      ),
+    /Breakpoint `landscape` conflicts with a media variant\./,
+  );
 });
 
 test("responsive combines with pseudo variants", () => {
@@ -497,6 +570,83 @@ test("variants rejects selectors whose target is not a class", () => {
           }
         }
       `),
-    /Expected class selector/,
+    /Expected the final selector segment to be a single class/,
+  );
+});
+
+test("variants rejects compound classes and pseudo-elements", () => {
+  for (const selector of [".x.active", ".x::before"]) {
+    assert.throws(
+      () =>
+        compile(`
+          ${selector} {
+            @include utilities.variants(hover) {
+              color: red;
+            }
+          }
+        `),
+      /Expected the final selector segment to be a single class/,
+      selector,
+    );
+  }
+});
+
+test("options rejects compound classes and pseudo-elements", () => {
+  for (const selector of [".x.active", ".x::before"]) {
+    assert.throws(
+      () =>
+        compile(`
+          ${selector} {
+            @include utilities.options((red: red)) using ($key, $value) {
+              color: $value;
+            }
+          }
+        `),
+      /Expected the final selector segment to be a single class/,
+      selector,
+    );
+  }
+});
+
+test("pseudo-elements can be nested inside variants", () => {
+  const actual = compile(`
+    .x {
+      @include utilities.variants(hover) {
+        &::before {
+          color: red;
+        }
+      }
+    }
+  `);
+
+  assert.equal(
+    actual,
+    String.raw`.x::before, .hover\:x:hover::before {
+  color: red;
+}`,
+  );
+});
+
+test("variants requires an enclosing selector", () => {
+  assert.throws(
+    () =>
+      compile(`
+        @include utilities.variants(hover) {
+          color: red;
+        }
+      `),
+    /variants\(\) must be included inside a selector\./,
+  );
+});
+
+test("root options rejects empty class names", () => {
+  assert.throws(
+    () =>
+      compile(`
+        @include utilities.options((null: red)) using ($key, $value) {
+          color: $value;
+        }
+      `),
+    /Root options must use non-empty class names\./,
   );
 });
