@@ -1,10 +1,10 @@
 # Utility Generator for SCSS
 
-This utility simplifies the process of creating utility classes in SASS/SCSS, automating the generation of styles based on variants and options.
+A Sass utility class generator with support for options and variants.
 
 ## Variants
 
-Variants allow the application of specific utility styles under defined conditions. This utility includes two main mixins: `variants` and `options`. While there are additional helper variants, they are essentially shorthands for the `variants` mixin with matching names: `responsive`, `light`, `dark`, `colorschemes`, and `print`.
+Variants allow the application of specific utility styles under defined conditions. This utility includes two main mixins: `variants` and `options`. The `responsive`, `light`, `dark`, and `print` mixins are shorthands for matching `variants` arguments, while `colorschemes()` generates both `light` and `dark` variants.
 
 ### Examples
 
@@ -24,7 +24,7 @@ Generated CSS:
 }
 ```
 
-The `variants` mixin accepts a list of valid CSS pseudo-class names, such as `valid`, `invalid`, `visited`, `focus-within`, `focus-visible`, and others. In addition, it includes: `responsive`, `light`, `dark`, `colorschemes` and `print`.
+The `variants` mixin accepts a list of valid CSS pseudo-class names, such as `valid`, `invalid`, `visited`, `focus-within`, `focus-visible`, and others. It also supports the built-in media variants `responsive`, `light`, `dark`, `pointer`, `touch`, `contrast`, `reduce`, `motion`, and `print`. `colorschemes` is not a variant name; use the `colorschemes()` shorthand to generate both `light` and `dark` variants.
 
 ```scss
 .text-red {
@@ -219,15 +219,19 @@ $custom-breakpoints: (
   xl: 1200px
 );
 
-@import 'path/to/_utility-generator.scss';
+@use 'path/to/utility-generator' as * with (
+  $grid-breakpoints: $custom-breakpoints
+);
 ```
+
+Breakpoint names must not conflict with the built-in variants: `responsive`, `light`, `dark`, `pointer`, `touch`, `contrast`, `reduce`, `motion`, or `print`. The generator reports an error when it finds a conflict.
 
 By using the `responsive` variant, you can efficiently generate responsive utility classes for different screen sizes without manually writing extensive CSS rules for each breakpoint.
 
 
 ## Shorthands
 
-When using only one variant from the list (`responsive`, `light`, `dark`, `colorschemes`, `print`), the corresponding shorthand can be used instead:
+Shorthands are available for the `responsive`, `light`, `dark`, and `print` variants. The `colorschemes()` shorthand generates both `light` and `dark` variants:
 
 ```scss
 .text-red {
@@ -349,6 +353,8 @@ Generated CSS:
 }
 ```
 
+Option keys are inserted into generated selectors as-is and must therefore be valid CSS class name fragments. The generator does not automatically escape spaces, slashes, punctuation, or other special characters; escape such keys before passing them to `options`. The `null` key remains the special case for generating the class name without a suffix.
+
 The `options` mixin also allows the use of variants:
 
 ```scss
@@ -389,7 +395,7 @@ This generates classes where the key is used as the class name:
 
 ## Refinements
 
-Note that the options `responsive`, `light`, `dark`, `colorschemes`, and `print` are equivalent, meaning classes will be generated separately for each variant. However, if you need to combine classes, for example, for light/dark and responsive variants, you should write the code as follows:
+Media variants passed to `variants` or `options` are generated separately. However, if you need to combine variants, for example, light/dark with responsive variants, write the code as follows:
 
 ```scss
 .text-red {

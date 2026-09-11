@@ -1,0 +1,13 @@
+{
+  "name": "sass-utility-generator",
+  "description": "A Sass utility class generator with support for options and variants.",
+  "type": "module",
+  "author": "rameel <rameel-b@hotmail.com>",
+  "private": true,
+  "scripts": {
+    "test": "node --test"
+  },
+  "devDependencies": {
+    "sass": "^1.104.0"
+  }
+}
