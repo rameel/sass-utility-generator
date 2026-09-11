@@ -1,72 +1,75 @@
-# Utility Generator for SCSS
+# Sass Utility Generator
 
-A Sass utility class generator with support for options and variants.
+A small Sass module for generating utility classes from lists and maps, with
+support for state, group, media-query, and responsive variants.
+
+The module provides the generator, not a predefined utility framework. You
+choose the class names, values, and CSS declarations that your project needs.
+
+## Requirements
+
+The generator uses the Sass module system and built-in modules, so it requires
+[Dart Sass](https://sass-lang.com/dart-sass/). Make
+`_utility-generator.scss` available on your Sass load path or place it next to
+the stylesheet that uses it.
+
+## Quick start
+
+```scss
+@use "utility-generator" as utilities;
+
+.opacity {
+  @include utilities.options((50: 0.5, 100: 1), hover) using ($name, $value) {
+    opacity: $value;
+  }
+}
+```
+
+Generated CSS:
+
+```css
+.opacity-50,
+.hover\:opacity-50:hover {
+  opacity: 0.5;
+}
+
+.opacity-100,
+.hover\:opacity-100:hover {
+  opacity: 1;
+}
+```
+
+The generated classes can then be used directly in markup:
+
+```html
+<button class="opacity-50 hover:opacity-100">...</button>
+```
+
+## Mental model
+
+The generator builds class names in three steps:
+
+| Input                                 | Generated class                       |
+|---------------------------------------|---------------------------------------|
+| `.display` with option `block`        | `.display-block`                      |
+| `.display-block` with variant `hover` | `.hover\:display-block:hover`         |
+| `.display-block` with breakpoint `md` | `@media (...) { .md\:display-block }` |
+
+The original, unprefixed selector is always generated. Variants add selectors;
+they do not replace the base selector.
 
 ## Variants
 
-Variants allow the application of specific utility styles under defined conditions. This utility includes two main mixins: `variants` and `options`. The `responsive`, `light`, `dark`, and `print` mixins are shorthands for matching `variants` arguments, while `colorschemes()` generates both `light` and `dark` variants.
-
-### Examples
+Use `variants($variants...)` inside a class selector to add conditional forms
+of the same utility:
 
 ```scss
+@use "utility-generator" as utilities;
+
 .text-red {
-    @include variants(hover, active) {
-        color: red;
-    }
-}
-```
-
-Generated CSS:
-
-```css
-.text-red, .hover\:text-red:hover, .active\:text-red:active {
+  @include utilities.variants(hover, focus-visible) {
     color: red;
-}
-```
-
-The `variants` mixin accepts a list of valid CSS pseudo-class names, such as `valid`, `invalid`, `visited`, `focus-within`, `focus-visible`, and others. It also supports the built-in media variants `responsive`, `light`, `dark`, `pointer`, `touch`, `contrast`, `reduce`, `motion`, and `print`. `colorschemes` is not a variant name; use the `colorschemes()` shorthand to generate both `light` and `dark` variants.
-
-```scss
-.text-red {
-    @include variants(light, dark, print) {
-        color: red;
-    }
-}
-```
-
-Generated CSS:
-
-```css
-.text-red {
-    color: red;
-}
-
-@media (prefers-color-scheme: light) {
-    .light\:text-red {
-        color: red;
-    }
-}
-
-@media (prefers-color-scheme: dark) {
-    .dark\:text-red {
-        color: red;
-    }
-}
-
-@media print {
-    .print\:text-red {
-        color: red;
-    }
-}
-```
-
-Variants can be combined with pseudo-class variants:
-
-```scss
-.text-red {
-    @include variants(active, focus, light, dark) {
-        color: red;
-    }
+  }
 }
 ```
 
@@ -74,350 +77,74 @@ Generated CSS:
 
 ```css
 .text-red,
-.active\:text-red:active,
-.focus\:text-red:focus {
-    color: red;
-}
-
-@media (prefers-color-scheme: light) {
-    .light\:text-red,
-    .light\:active\:text-red:active,
-    .light\:focus\:text-red:focus {
-        color: red;
-    }
-}
-
-@media (prefers-color-scheme: dark) {
-    .dark\:text-red,
-    .dark\:active\:text-red:active,
-    .dark\:focus\:text-red:focus {
-        color: red;
-    }
+.hover\:text-red:hover,
+.focus-visible\:text-red:focus-visible {
+  color: red;
 }
 ```
 
-Exploring another variant - `responsive`:
+Names that are not registered media variants are emitted as CSS
+pseudo-classes. The generator does not validate pseudo-class names, which
+allows new and vendor-specific pseudo-classes but also means that misspellings
+are not detected.
 
-The `responsive` variant is a feature that facilitates the creation of responsive utility classes. This variant allows you to generate styles tailored to different screen sizes by utilizing predefined breakpoints.
+### Group variants
 
-The `responsive` variant relies on the variable `$grid-breakpoints`, which contains default breakpoints for various screen sizes. By default, it includes breakpoints for extra-small (`xs`), small (`sm`), medium (`md`), large (`lg`), extra-large (`xl`), and double extra-large (`xxl`) screens.
-
-```scss
-$grid-breakpoints: (
-  xs: 0,
-  sm: 576px,
-  md: 768px,
-  lg: 992px,
-  xl: 1200px,
-  xxl: 1400px
-) !default;
-```
-
-```scss
-.sr-only {
-    @include variants(responsive) {
-        position: absolute;
-        width: 1px;
-        height: 1px;
-        padding: 0;
-        margin: -1px;
-        overflow: hidden;
-        clip: rect(0, 0, 0, 0);
-        white-space: nowrap;
-        border-width: 0;
-    }
-}
-```
-
-Generated CSS:
-
-```css
-.sr-only {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border-width: 0;
-}
-
-@media (min-width: 576px) {
-    .sm\:sr-only {
-        position: absolute;
-        width: 1px;
-        height: 1px;
-        padding: 0;
-        margin: -1px;
-        overflow: hidden;
-        clip: rect(0, 0, 0, 0);
-        white-space: nowrap;
-        border-width: 0;
-    }
-}
-```
-
-For brevity, generated code for other breakpoints have been omitted.
-
-For example:
-
-```scss
-.not-sr-only {
-    @include variants(focus, responsive) {
-        position: static;
-        width: auto;
-        height: auto;
-        padding: 0;
-        margin: 0;
-        overflow: visible;
-        clip: auto;
-        white-space: normal;
-    }
-}
-```
-
-Generated CSS:
-
-```css
-.not-sr-only, .focus\:not-sr-only:focus {
-    position: static;
-    width: auto;
-    height: auto;
-    padding: 0;
-    margin: 0;
-    overflow: visible;
-    clip: auto;
-    white-space: normal;
-}
-
-@media (min-width: 576px) {
-    .sm\:not-sr-only, .sm\:focus\:not-sr-only:focus {
-        position: static;
-        width: auto;
-        height: auto;
-        padding: 0;
-        margin: 0;
-        overflow: visible;
-        clip: auto;
-        white-space: normal;
-    }
-}
-```
-
-Again, generated code for other breakpoints are omitted.
-
-You can customize the breakpoints by defining your own `$grid-breakpoints` variable before including the `_utility-generator.scss` file in your project.
-
-```scss
-$custom-breakpoints: (
-  xs: 0,
-  sm: 480px,
-  md: 768px,
-  lg: 1024px,
-  xl: 1200px
-);
-
-@use 'path/to/utility-generator' as * with (
-  $grid-breakpoints: $custom-breakpoints
-);
-```
-
-Breakpoint names must not conflict with the built-in variants: `responsive`, `light`, `dark`, `pointer`, `touch`, `contrast`, `reduce`, `motion`, or `print`. The generator reports an error when it finds a conflict.
-
-By using the `responsive` variant, you can efficiently generate responsive utility classes for different screen sizes without manually writing extensive CSS rules for each breakpoint.
-
-
-## Shorthands
-
-Shorthands are available for the `responsive`, `light`, `dark`, and `print` variants. The `colorschemes()` shorthand generates both `light` and `dark` variants:
-
-```scss
-.text-red {
-    // @include variants(dark)
-    @include dark() {
-        color: red;
-    }
-}
-```
-
-## Group variants
-
-The `variants` mixin also supports variants with the `group-{modifier}` prefix, allowing styling based on the parent element's state.
-
-For example:
+A variant beginning with `group-` applies a state from a `.group` ancestor:
 
 ```scss
 .bg-gray {
-    @include variants(group-hover) {
-        background-color: #555;
-    }
+  @include utilities.variants(group-hover) {
+    background-color: #555;
+  }
 }
 ```
-
-Generated CSS:
 
 ```css
-.bg-gray, .group:hover .group-hover\:bg-gray {
-    background-color: #555;
+.bg-gray,
+.group:hover .group-hover\:bg-gray {
+  background-color: #555;
 }
 ```
 
-This allows styling inner elements based on the parent's state. To achieve this, assign the `.group` class to the parent and use the corresponding prefixed class for the child element (e.g., `.group-hover:bg-gray`).
+Use `.group` on the parent and the generated variant class on a descendant:
 
 ```html
 <div class="group">
-    <div class="flex items-center">
-        <svg >...</svg>
-        <span class="text-green group-hover:bg-gray">Some text</span>
-    </div>
+  <span class="group-hover:bg-gray">...</span>
 </div>
 ```
 
-## Options
+### Built-in media variants
 
-The `options` mixin enables the use of additional parameters for class name generation.
+| Variant      | Media query                               |
+|--------------|-------------------------------------------|
+| `light`      | `(prefers-color-scheme: light)`           |
+| `dark`       | `(prefers-color-scheme: dark)`            |
+| `pointer`    | `(pointer: fine)`                         |
+| `touch`      | `(pointer: coarse)`                       |
+| `contrast`   | `(prefers-contrast: more)`                |
+| `reduce`     | `(prefers-reduced-motion: reduce)`        |
+| `motion`     | `(prefers-reduced-motion: no-preference)` |
+| `print`      | `print`                                   |
+| `responsive` | All configured non-zero breakpoints       |
 
-Returning to our `.text-red` class example, creating classes for various colors using only the `variants` mixin would require manually writing a loop, which is inconvenient. Hence, the `options` mixin.
+`pointer` and `touch` describe the primary pointing device. They do not test
+whether any fine or coarse pointer exists on a hybrid device.
 
-```scss
-.text {
-    $colors: (red, green, blue);
-
-    @include options($colors) using ($value...) {
-        color: $value;
-    }
-}
-```
-
-This generates class names according to the values in the provided array: `.text-red`, `.text-green`, `.text-blue`. The array values at each step are obtained using the `using ($value...)` operator, used to set the class color.
-
-The `options` mixin also supports maps. In cases where the key name is distinct from its corresponding value, as demonstrated in the following example, you can utilize maps for enhanced flexibility:
-
-```scss
-.text {
-    $colors: (red: #FF0000, green: #00FF00, blue: #0000FF);
-
-    @include options($colors) using ($key, $value) {
-        color: $value;
-    }
-}
-```
-
-This generates the following CSS:
-
-```css
-.text-red {
-    color: #FF0000;
-}
-
-.text-green {
-    color: #00FF00;
-}
-
-.text-blue {
-    color: #0000FF;
-}
-```
-
-By using `null` as a key, the name is used as-is, allowing us to use it as a default value:
-
-```scss
-.text {
-    $colors: (null: #000, red: #FF0000, green: #00FF00, blue: #0000FF);
-
-    @include options($colors) using ($key, $value) {
-        color: $value;
-    }
-}
-```
-
-Generated CSS:
-
-```css
-.text {
-    color: #000;
-}
-
-.text-red {
-    color: #FF0000;
-}
-
-.text-green {
-    color: #00FF00;
-}
-
-.text-blue {
-    color: #0000FF;
-}
-```
-
-Option keys are inserted into generated selectors as-is and must therefore be valid CSS class name fragments. The generator does not automatically escape spaces, slashes, punctuation, or other special characters; escape such keys before passing them to `options`. The `null` key remains the special case for generating the class name without a suffix.
-
-The `options` mixin also allows the use of variants:
-
-```scss
-.text {
-    $colors: (null: #232323, red: #FF0000, green: #00FF00, blue: #0000FF);
-
-    @include options($colors, active, hover, responsive) using ($key, $value) {
-        color: $value;
-    }
-}
-```
-
-One additional feature of the `options` mixin is when the map's names already define class names. In such cases, it can be used as follows:
-
-```scss
-$colors: (red: #FF0000, green: #00FF00, blue: #0000FF);
-
-@include options($colors, active, hover) using ($key, $value) {
-    color: $value;
-}
-```
-
-This generates classes where the key is used as the class name:
-
-```css
-.red, .active\:red:active, .hover\:red:hover {
-    color: #FF0000;
-}
-
-.green, .active\:green:active, .hover\:green:hover {
-    color: #00FF00;
-}
-
-.blue, .active\:blue:active, .hover\:blue:hover {
-    color: #0000FF;
-}
-```
-
-## Refinements
-
-Media variants passed to `variants` or `options` are generated separately. However, if you need to combine variants, for example, light/dark with responsive variants, write the code as follows:
+Media variants are emitted in their own `@media` rules:
 
 ```scss
 .text-red {
-  @include responsive() {
-    @include variants(light, dark) {
-      color: red;
-    }
-  }
-}
-```
-
-The class `.text-red` will be generated separately for `light`, `dark`, and `responsive` variants, as well as colorscheme and responsive combinations:
-
-```scss
-.text-red {
-  color: red;
-}
-
-@media (prefers-color-scheme: light) {
-  .light\:text-red {
+  @include utilities.variants(dark, print) {
     color: red;
   }
+}
+```
+
+```css
+.text-red {
+  color: red;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -426,18 +153,188 @@ The class `.text-red` will be generated separately for `light`, `dark`, and `res
   }
 }
 
-@media (min-width: 576px) {
-  .sm\:text-red {
+@media print {
+  .print\:text-red {
     color: red;
   }
 }
+```
 
-@media (min-width: 576px) and (prefers-color-scheme: light) {
-  .light\:sm\:text-red {
+`print` intentionally does not combine with pseudo-class variants passed in
+the same call. Interactive states such as `hover` and `focus` have no useful
+meaning in printed output.
+
+## Responsive variants
+
+The `responsive` variant creates one media rule for every configured non-zero
+breakpoint:
+
+```scss
+.display-block {
+  @include utilities.variants(responsive) {
+    display: block;
+  }
+}
+```
+
+The default breakpoints are:
+
+```scss
+(
+  xs: 0,
+  sm: 576px,
+  md: 768px,
+  lg: 992px,
+  xl: 1200px,
+  xxl: 1400px
+)
+```
+
+A zero value represents the base selector and does not generate a prefixed
+class. With the default configuration, `.display-block` covers `xs`, while
+`.sm\:display-block` through `.xxl\:display-block` are emitted in min-width
+media queries.
+
+Configure breakpoints when loading the module:
+
+```scss
+@use "utility-generator" as utilities with (
+  $grid-breakpoints: (
+    mobile: 0,
+    tablet: 48rem,
+    desktop: 75rem
+  )
+);
+```
+
+Breakpoint values must be zero or non-negative Sass lengths. Breakpoint names
+must not conflict with built-in or custom media variant names.
+
+## Custom media variants
+
+Add project-specific media variants through `$custom-media-queries`:
+
+```scss
+@use "utility-generator" as utilities with (
+  $custom-media-queries: (
+    landscape: "(orientation: landscape)",
+    retina: "(min-resolution: 2dppx)"
+  )
+);
+
+.visible {
+  @include utilities.variants(landscape, retina) {
+    visibility: visible;
+  }
+}
+```
+
+Media query values must be strings. Custom names cannot replace built-in
+variants or `responsive`.
+
+## Options
+
+Use `options($options, $variants...)` to generate several utilities from the
+same declaration block.
+
+### Sass lists
+
+A flat Sass list uses each item as both the class suffix and declaration value:
+
+```scss
+.display {
+  @include utilities.options(block inline none, responsive) using ($value...) {
+    display: $value;
+  }
+}
+```
+
+This generates `.display-block`, `.display-inline`, and `.display-none`, plus
+their responsive variants. The rest argument is used because the content block
+receives the option key and value; list options have no separate mapped value.
+
+Use a map instead of a structured list when a CSS value contains multiple
+parts.
+
+### Sass maps
+
+A map separates the class suffix from its CSS value:
+
+```scss
+.text {
+  $colors: (
+    muted: #666,
+    danger: #c00
+  );
+
+  @include utilities.options($colors, hover) using ($name, $value) {
+    color: $value;
+  }
+}
+```
+
+This generates `.text-muted`, `.text-danger`, and their `hover:` variants.
+
+Inside a selector, a `null` or empty-string key leaves the selector
+unsuffixed. This is useful for a default value:
+
+```scss
+.rounded {
+  @include utilities.options((null: 0.25rem, pill: 9999px)) using ($name, $value) {
+    border-radius: $value;
+  }
+}
+```
+
+The result contains `.rounded` and `.rounded-pill`.
+
+### Root options
+
+At the stylesheet root, map keys are complete class names rather than suffixes:
+
+```scss
+@include utilities.options((visible: visible, invisible: hidden)) using ($name, $value) {
+  visibility: $value;
+}
+```
+
+This generates `.visible` and `.invisible`. Root options require non-empty
+keys because there is no enclosing selector to use as a class name.
+
+## Combining variants
+
+Pseudo-class variants and media variants passed to one mixin are combined
+automatically:
+
+```scss
+.text-red {
+  @include utilities.variants(hover, dark) {
     color: red;
   }
 }
+```
 
+This emits the base and `hover:` selectors, then their `dark:` counterparts in
+the dark media query.
+
+Multiple media variants passed to one call are alternatives and produce
+separate media rules. Nest mixins when the conditions must be combined with
+`and`:
+
+```scss
+.text-red {
+  @include utilities.responsive() {
+    @include utilities.colorschemes() {
+      color: red;
+    }
+  }
+}
+```
+
+In addition to the separate responsive and color-scheme rules, this produces
+rules such as:
+
+```css
 @media (min-width: 576px) and (prefers-color-scheme: dark) {
   .dark\:sm\:text-red {
     color: red;
@@ -445,29 +342,77 @@ The class `.text-red` will be generated separately for `light`, `dark`, and `res
 }
 ```
 
-Also, note that the last used mixin takes precedence, meaning its prefix will come first. In our case, we get `dark:sm:text-red`. If we had used the responsive mixin last, the class names would be `sm:dark:text-red`.
+The innermost mixin contributes the leftmost class prefix. Reversing the
+nesting above produces `.sm\:dark\:text-red` instead. This affects class names,
+not CSS cascade precedence.
+
+## Shorthands
+
+| Mixin            | Equivalent call         |
+|------------------|-------------------------|
+| `responsive()`   | `variants(responsive)`  |
+| `light()`        | `variants(light)`       |
+| `dark()`         | `variants(dark)`        |
+| `colorschemes()` | `variants(light, dark)` |
+| `print()`        | `variants(print)`       |
 
 ```scss
 .text-red {
-  @include variants(light, dark) {
-    @include responsive() {
-      color: red;
-    }
+  @include utilities.dark() {
+    color: red;
   }
 }
 ```
 
-To add or modify the media types you can use, edit the map in the `-create-media-queries-map` function as needed, as it is relevant to your requirements.
+## Selector rules and limitations
 
-```scss
-$map: (
-  light: "(prefers-color-scheme: light)",
-  dark: "(prefers-color-scheme: dark)",
-  pointer: "(pointer: fine)",
-  touch: "(pointer: coarse)",
-  contrast: "(prefers-contrast: more)",
-  reduce: "(prefers-reduced-motion: reduce)",
-  motion: "(prefers-reduced-motion: no-preference)",
-  print: "print"
-);
+- Call `variants()` inside a selector. Root-level variant generation is not
+  supported.
+- Start generation from a class selector. Selector lists and descendant
+  selectors work when each final target is a class, such as
+  `.card .title, .dialog .title`.
+- Put pseudo-elements inside the generated content block rather than invoking
+  a generator on `.class::before`:
+
+  ```scss
+  .icon {
+    @include utilities.variants(hover) {
+      &::before {
+        color: red;
+      }
+    }
+  }
+  ```
+
+- Compound class targets such as `.button.active` are not supported because it
+  is ambiguous which class should receive an option or variant.
+- Option keys, variant names, and breakpoint names are inserted into class
+  names as-is. They must be valid CSS class-name fragments; the generator does
+  not escape spaces, slashes, or punctuation.
+- Group variants always use the `.group` ancestor.
+- The base selector is always emitted.
+- `print` is isolated from interactive pseudo-class variants.
+
+## API reference
+
+| API                               | Purpose                                      |
+|-----------------------------------|----------------------------------------------|
+| `$grid-breakpoints`               | Configures responsive min-width variants     |
+| `$custom-media-queries`           | Adds named media variants                    |
+| `variants($variants...)`          | Adds pseudo-class, group, and media variants |
+| `options($options, $variants...)` | Generates classes from a list or map         |
+| `responsive()`                    | Adds all responsive variants                 |
+| `light()` / `dark()`              | Adds one color-scheme variant                |
+| `colorschemes()`                  | Adds both color-scheme variants              |
+| `print()`                         | Adds the print variant                       |
+
+## Development
+
+Install dependencies and run the test suite:
+
+```sh
+pnpm install
+pnpm test
 ```
+
+The project is licensed under the [MIT License](LICENSE).
