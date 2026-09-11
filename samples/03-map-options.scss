@@ -1,0 +1,12 @@
+@use "../utility-generator" as utilities;
+
+.text {
+  $colors: (
+    muted: #666,
+    danger: #c00
+  );
+
+  @include utilities.options($colors) using ($name, $value) {
+    color: $value;
+  }
+}

@@ -45,6 +45,26 @@ The generated classes can then be used directly in markup:
 <button class="opacity-50 hover:opacity-100">...</button>
 ```
 
+## Samples
+
+The standalone samples build on one another in this order:
+
+1. [Basic utility](samples/01-basic-utility.scss)
+2. [List options](samples/02-list-options.scss)
+3. [Map options](samples/03-map-options.scss)
+4. [State variants](samples/04-state-variants.scss)
+5. [Group variant](samples/05-group-variant.scss)
+6. [Responsive utilities](samples/06-responsive.scss)
+7. [Custom breakpoints](samples/07-custom-breakpoints.scss)
+8. [Custom media variants](samples/08-custom-media.scss)
+9. [Combining variants](samples/09-combining-variants.scss)
+
+Compile all samples to separate files in `samples/css/`:
+
+```sh
+pnpm build:samples
+```
+
 ## Mental model
 
 The generator builds class names in three steps:
@@ -408,10 +428,11 @@ not CSS cascade precedence.
 
 ## Development
 
-Install dependencies and run the test suite:
+Install dependencies, compile each sample to `samples/css/`, and run the test suite:
 
 ```sh
 pnpm install
+pnpm build:samples
 pnpm test
 ```
 

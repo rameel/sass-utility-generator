@@ -5,6 +5,8 @@
   "author": "rameel <rameel-b@hotmail.com>",
   "private": true,
   "scripts": {
+    "clean:samples": "node -e \"require('node:fs').rmSync('samples/css', { recursive: true, force: true })\"",
+    "build:samples": "pnpm run clean:samples && sass --no-source-map samples:samples/css",
     "test": "node --test"
   },
   "devDependencies": {

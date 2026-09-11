@@ -1,0 +1,7 @@
+@use "../utility-generator" as utilities;
+
+.display {
+  @include utilities.options(block inline none) using ($value...) {
+    display: $value;
+  }
+}

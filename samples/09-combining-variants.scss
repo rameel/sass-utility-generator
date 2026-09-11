@@ -1,0 +1,9 @@
+@use "../utility-generator" as utilities;
+
+.text-red {
+  @include utilities.responsive() {
+    @include utilities.colorschemes() {
+      color: #c00;
+    }
+  }
+}
