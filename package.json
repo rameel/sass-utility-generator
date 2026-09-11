@@ -8,6 +8,6 @@
     "test": "node --test"
   },
   "devDependencies": {
-    "sass": "1.104.0"
+    "sass": "^1.104.0"
   }
 }
