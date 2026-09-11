@@ -4,7 +4,7 @@ A Sass utility class generator with support for options and variants.
 
 ## Variants
 
-Variants allow the application of specific utility styles under defined conditions. This utility includes two main mixins: `variants` and `options`. While there are additional helper variants, they are essentially shorthands for the `variants` mixin with matching names: `responsive`, `light`, `dark`, `colorschemes`, and `print`.
+Variants allow the application of specific utility styles under defined conditions. This utility includes two main mixins: `variants` and `options`. The `responsive`, `light`, `dark`, and `print` mixins are shorthands for matching `variants` arguments, while `colorschemes()` generates both `light` and `dark` variants.
 
 ### Examples
 
