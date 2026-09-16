@@ -302,6 +302,33 @@ This is useful for a default value:
 
 The result contains `.rounded` and `.rounded-pill`.
 
+### Options with pseudo-classes
+
+Generate the option classes first, then nest pseudo-classes inside the content block:
+
+```scss
+.link {
+  @include utilities.options((
+    primary: #2563eb,
+    danger: #dc2626
+  )) using ($name, $color) {
+    &:hover,
+    &:focus-visible {
+      color: $color;
+    }
+  }
+}
+```
+
+This produces selectors such as `.link-primary:hover` and
+`.link-danger:focus-visible`. Unlike `options(..., hover)`, it applies the
+declarations only in the explicitly nested states and does not generate base
+or `hover:` utility variants.
+
+Calling `options()` directly inside a pseudo-class selector, such as
+`.link:hover`, is not supported. Put the pseudo-class inside the generated
+content block instead.
+
 ### Root options
 
 At the stylesheet root, map keys are complete class names rather than suffixes:
