@@ -1,12 +1,37 @@
 {
-  "name": "sass-utility-generator",
+  "name": "@ramstack/sass-utility-generator",
+  "version": "0.1.0",
   "description": "A Sass utility class generator with support for options and variants.",
   "type": "module",
   "author": "rameel <rameel-b@hotmail.com>",
-  "private": true,
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rameel/sass-utility-generator.git"
+  },
+  "homepage": "https://github.com/rameel/sass-utility-generator#readme",
+  "bugs": "https://github.com/rameel/sass-utility-generator/issues",
+  "keywords": [
+    "sass",
+    "scss",
+    "utilities",
+    "css",
+    "generator",
+    "responsive",
+    "variants"
+  ],
+  "files": [
+    "_utility-generator.scss"
+  ],
+  "sass": "./_utility-generator.scss",
+  "exports": {
+    ".": {
+      "sass": "./_utility-generator.scss"
+    }
+  },
   "scripts": {
     "clean:samples": "node -e \"require('node:fs').rmSync('samples/css', { recursive: true, force: true })\"",
-    "build:samples": "pnpm run clean:samples && sass --no-source-map samples:samples/css",
+    "build:samples": "npm run clean:samples && sass --no-source-map samples:samples/css",
     "test": "node --test"
   },
   "devDependencies": {

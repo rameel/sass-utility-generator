@@ -1,21 +1,67 @@
 # Sass Utility Generator
 
-A small Sass module for generating utility classes from lists and maps,
-with support for state, group, media-query, and responsive variants.
+A small Sass module that turns lists and maps into utility classes.
 
-The module provides the generator, not a predefined utility framework.
-You choose the class names, values, and CSS declarations that your project needs.
+You choose the class names, values, and CSS rules. The generator adds variants
+for states like hover, group states, media queries, and responsive breakpoints.
 
 ## Requirements
 
-The generator uses the Sass module system and built-in modules, so it requires
-[Dart Sass](https://sass-lang.com/dart-sass/). Make `_utility-generator.scss` available
-on your Sass load path or place it next to the stylesheet that uses it.
+This package requires [Dart Sass](https://sass-lang.com/dart-sass/).
+You can use either `sass` or `sass-embedded`.
+
+## Installation
+
+Install the package along with Dart Sass:
+
+```sh
+npm install -D @ramstack/sass-utility-generator sass
+```
+
+In Vite and other tools with Sass package support, import it by name:
+
+```scss
+@use "@ramstack/sass-utility-generator" as utilities;
+```
+
+For the Dart Sass CLI (1.71.0+), add `pkg:` to the import and enable the
+[Node.js package importer](https://sass-lang.com/documentation/cli/dart-sass/#pkg-importer-node):
+
+```scss
+@use "pkg:@ramstack/sass-utility-generator" as utilities;
+```
+
+```sh
+npx sass --pkg-importer=node src/styles.scss dist/styles.css
+```
+
+With the JavaScript API, use the same `pkg:` import and add the importer:
+
+```js
+import * as sass from "sass";
+
+const result = sass.compile("src/styles.scss", {
+  importers: [new sass.NodePackageImporter()],
+});
+```
+
+If your tool doesn't support package imports, add the package directory to
+the Sass load path and use the file name:
+
+```sh
+npx sass --load-path=node_modules/@ramstack/sass-utility-generator src/styles.scss dist/styles.css
+```
+
+```scss
+@use "utility-generator" as utilities;
+```
+
+The examples below use the first import form.
 
 ## Quick start
 
 ```scss
-@use "utility-generator" as utilities;
+@use "@ramstack/sass-utility-generator" as utilities;
 
 .opacity {
   @include utilities.options((50: 0.5, 100: 1), hover) using ($name, $value) {
@@ -38,7 +84,7 @@ Generated CSS:
 }
 ```
 
-The generated classes can then be used directly in markup:
+Use the classes in your HTML:
 
 ```html
 <button class="opacity-50 hover:opacity-100">...</button>
@@ -46,7 +92,7 @@ The generated classes can then be used directly in markup:
 
 ## Samples
 
-The standalone samples build on one another in this order:
+Each sample is a complete stylesheet you can compile on its own:
 
 1. [Basic utility](samples/01-basic-utility.scss)
 2. [List options](samples/02-list-options.scss)
@@ -58,31 +104,33 @@ The standalone samples build on one another in this order:
 8. [Custom media variants](samples/08-custom-media.scss)
 9. [Combining variants](samples/09-combining-variants.scss)
 
-Compile all samples to separate files in `samples/css/`:
+To build all samples, run these commands from the repository root.
+The CSS goes in `samples/css/`:
 
 ```sh
-pnpm build:samples
+npm install
+npm run build:samples
 ```
 
-## Mental model
+## How it works
 
-The generator builds class names in three steps:
+Options add a suffix like `-block`. Variants add a prefix like `hover:`
+and a condition for when the styles apply:
 
-| Input                                 | Generated class                       |
+| Input                                 | Generated selector or rule            |
 |---------------------------------------|---------------------------------------|
 | `.display` with option `block`        | `.display-block`                      |
 | `.display-block` with variant `hover` | `.hover\:display-block:hover`         |
 | `.display-block` with breakpoint `md` | `@media (...) { .md\:display-block }` |
 
-The original, unprefixed selector is always generated. Variants add selectors;
-they do not replace the base selector.
+The base class, such as `.display-block`, is always included alongside its variants.
 
 ## Variants
 
-Use `variants($variants...)` inside a class selector to add conditional forms of the same utility:
+Use `variants($variants...)` to add states such as `hover` and `focus-visible`:
 
 ```scss
-@use "utility-generator" as utilities;
+@use "@ramstack/sass-utility-generator" as utilities;
 
 .text-red {
   @include utilities.variants(hover, focus-visible) {
@@ -101,14 +149,14 @@ Generated CSS:
 }
 ```
 
-Names that are not registered media variants are emitted as CSS pseudo-classes.
-The generator does not validate pseudo-class names,
-which allows new and vendor-specific pseudo-classes but also means
-that misspellings are not detected.
+Names such as `hover` and `focus-visible` become CSS pseudo-classes.
+The generator doesn't check these names, so it accepts new and vendor-specific
+pseudo-classes, but won't catch typos.
 
 ### Group variants
 
-A variant beginning with `group-` applies a state from a `.group` ancestor:
+Add `group-` before a state to react to that state on a `.group` ancestor.
+For example, `group-hover` applies when that ancestor is hovered:
 
 ```scss
 .bg-gray {
@@ -125,7 +173,8 @@ A variant beginning with `group-` applies a state from a `.group` ancestor:
 }
 ```
 
-Use `.group` on the parent and the generated variant class on a descendant:
+Put `group` on a containing element and `group-hover:bg-gray` on the element
+you want to style:
 
 ```html
 <div class="group">
@@ -147,10 +196,10 @@ Use `.group` on the parent and the generated variant class on a descendant:
 | `print`      | `print`                                   |
 | `responsive` | All configured non-zero breakpoints       |
 
-`pointer` and `touch` describe the primary pointing device.
-They do not test whether any fine or coarse pointer exists on a hybrid device.
+`pointer` and `touch` check the primary pointing device, even when several
+pointing devices are available.
 
-Media variants are emitted in their own `@media` rules:
+Each media variant gets its own `@media` rule:
 
 ```scss
 .text-red {
@@ -178,13 +227,12 @@ Media variants are emitted in their own `@media` rules:
 }
 ```
 
-`print` intentionally does not combine with pseudo-class variants passed in the same call.
-Interactive states such as `hover` and `focus` have no useful meaning in printed output.
+`print` uses the base selector and does not combine with pseudo-class variants
+passed in the same call.
 
 ## Responsive variants
 
-The `responsive` variant creates one media rule for every configured non-zero
-breakpoint:
+Use `responsive` to generate variants for your breakpoints:
 
 ```scss
 .display-block {
@@ -207,15 +255,15 @@ The default breakpoints are:
 )
 ```
 
-A zero value represents the base selector and does not generate a prefixed class.
-With the default configuration, `.display-block` covers `xs`, 
-while `.sm\:display-block` through `.xxl\:display-block` are emitted
-in min-width media queries.
+The base `.display-block` works at all screen sizes. With these breakpoints,
+`responsive` adds `.sm\:display-block` through `.xxl\:display-block` inside
+`min-width` media queries. The `xs: 0` entry uses the base class, so there's
+no separate `xs:` class.
 
-Configure breakpoints when loading the module:
+To use your own breakpoints, set `$grid-breakpoints` in `@use`:
 
 ```scss
-@use "utility-generator" as utilities with (
+@use "@ramstack/sass-utility-generator" as utilities with (
   $grid-breakpoints: (
     mobile: 0,
     tablet: 48rem,
@@ -224,15 +272,16 @@ Configure breakpoints when loading the module:
 );
 ```
 
-Breakpoint values must be zero or non-negative Sass lengths.
-Breakpoint names must not conflict with built-in or custom media variant names.
+Use lengths such as `576px` or `48rem`, or `0` for the base size.
+Negative values aren't allowed. Choose names that aren't already used by
+media variants or `responsive`.
 
 ## Custom media variants
 
-Add project-specific media variants through `$custom-media-queries`:
+Define your own media variants with `$custom-media-queries`:
 
 ```scss
-@use "utility-generator" as utilities with (
+@use "@ramstack/sass-utility-generator" as utilities with (
   $custom-media-queries: (
     landscape: "(orientation: landscape)",
     retina: "(min-resolution: 2dppx)"
@@ -246,15 +295,16 @@ Add project-specific media variants through `$custom-media-queries`:
 }
 ```
 
-Media query values must be strings. Custom names cannot replace built-in variants or `responsive`.
+Write media queries as strings. Names already used by built-in variants or
+`responsive` are reserved.
 
 ## Options
 
-Use `options($options, $variants...)` to generate several utilities from the same declaration block.
+Use `options($options, $variants...)` to reuse CSS rules across a list or map of values:
 
 ### Sass lists
 
-A flat Sass list uses each item as both the class suffix and declaration value:
+With a simple list, each item becomes both the class suffix and the CSS value:
 
 ```scss
 .display {
@@ -265,14 +315,17 @@ A flat Sass list uses each item as both the class suffix and declaration value:
 ```
 
 This generates `.display-block`, `.display-inline`, and `.display-none`, plus
-their responsive variants. The rest argument is used because the content block
-receives the option key and value; list options have no separate mapped value.
+their responsive variants.
 
-Use a map instead of a structured list when a CSS value contains multiple parts.
+The `$value...` parameter collects the two arguments passed by `options()`:
+the list item and `null`. Sass leaves `null` out of the CSS, so `display`
+receives just the item.
+
+For values with multiple parts, such as `1px solid red`, use a map.
 
 ### Sass maps
 
-A map separates the class suffix from its CSS value:
+Use a map to give each value its own class suffix:
 
 ```scss
 .text {
@@ -289,8 +342,7 @@ A map separates the class suffix from its CSS value:
 
 This generates `.text-muted`, `.text-danger`, and their `hover:` variants.
 
-Inside a selector, a `null` or empty-string key leaves the selector unsuffixed.
-This is useful for a default value:
+For a default value, use `null` or `""` as the key to keep the original class name:
 
 ```scss
 .rounded {
@@ -304,7 +356,7 @@ The result contains `.rounded` and `.rounded-pill`.
 
 ### Options with pseudo-classes
 
-Generate the option classes first, then nest pseudo-classes inside the content block:
+To make an option apply only on hover or focus, nest those states inside `options()`:
 
 ```scss
 .link {
@@ -320,18 +372,16 @@ Generate the option classes first, then nest pseudo-classes inside the content b
 }
 ```
 
-This produces selectors such as `.link-primary:hover` and
-`.link-danger:focus-visible`. Unlike `options(..., hover)`, it applies the
-declarations only in the explicitly nested states and does not generate base
-or `hover:` utility variants.
+This creates selectors such as `.link-primary:hover` and `.link-danger:focus-visible`.
+The colors apply only in these states; no base color or `hover:` class is generated.
+Use `options(..., hover)` when you also want base classes and `hover:` variants.
 
-Calling `options()` directly inside a pseudo-class selector, such as
-`.link:hover`, is not supported. Put the pseudo-class inside the generated
-content block instead.
+Keep `:hover` and similar states inside the mixin block. Calling `options()`
+inside `.link:hover` isn't supported.
 
 ### Root options
 
-At the stylesheet root, map keys are complete class names rather than suffixes:
+Outside a selector, map keys become complete class names:
 
 ```scss
 @include utilities.options((visible: visible, invisible: hidden)) using ($name, $value) {
@@ -339,12 +389,12 @@ At the stylesheet root, map keys are complete class names rather than suffixes:
 }
 ```
 
-This generates `.visible` and `.invisible`. Root options require non-empty keys
-because there is no enclosing selector to use as a class name.
+This generates `.visible` and `.invisible`. Keys can't be `null` or `""` here
+because there's no existing class name to use.
 
 ## Combining variants
 
-Pseudo-class variants and media variants passed to one mixin are combined automatically:
+Pass state and media variants together to combine them (except for `print`):
 
 ```scss
 .text-red {
@@ -354,12 +404,11 @@ Pseudo-class variants and media variants passed to one mixin are combined automa
 }
 ```
 
-This emits the base and `hover:` selectors, then their `dark:` counterparts
-in the dark media query.
+This creates `.text-red` and its `hover:` variant, then adds `dark:` versions
+of both inside the media query.
 
-Multiple media variants passed to one call are alternatives and produce
-separate media rules. Nest mixins when the conditions must be combined with
-`and`:
+Each media variant in a call gets a separate media rule. To require both
+conditions at once, nest mixins:
 
 ```scss
 .text-red {
@@ -371,7 +420,7 @@ separate media rules. Nest mixins when the conditions must be combined with
 }
 ```
 
-In addition to the separate responsive and color-scheme rules, this produces rules such as:
+Alongside the responsive and color-scheme variants, this generates combinations such as:
 
 ```css
 @media (min-width: 576px) and (prefers-color-scheme: dark) {
@@ -381,8 +430,8 @@ In addition to the separate responsive and color-scheme rules, this produces rul
 }
 ```
 
-The innermost mixin contributes the leftmost class prefix. Reversing the nesting above
-produces `.sm\:dark\:text-red` instead. This affects class names, not CSS cascade precedence.
+The inner mixin's prefix comes first in the class name. Swap the nesting
+to get `.sm\:dark\:text-red` instead.
 
 ## Shorthands
 
@@ -404,11 +453,10 @@ produces `.sm\:dark\:text-red` instead. This affects class names, not CSS cascad
 
 ## Selector rules and limitations
 
-- Call `variants()` inside a selector. Root-level variant generation is not supported.
-- Start generation from a class selector. Selector lists and descendant
-  selectors work when each final target is a class, such as `.card .title, .dialog .title`.
-- Put pseudo-elements inside the generated content block rather than invoking
-  a generator on `.class::before`:
+- Call `variants()` inside a class selector.
+- Descendant selectors and selector lists work too, as long as each target
+  ends in a single class: `.card .title, .dialog .title`.
+- For pseudo-elements such as `::before`, nest them inside the mixin block:
 
   ```scss
   .icon {
@@ -420,14 +468,11 @@ produces `.sm\:dark\:text-red` instead. This affects class names, not CSS cascad
   }
   ```
 
-- Compound class targets such as `.button.active` are not supported because it
-  is ambiguous which class should receive an option or variant.
-- Option keys, variant names, and breakpoint names are inserted into class
-  names as-is. They must be valid CSS class-name fragments; the generator does
-  not escape spaces, slashes, or punctuation.
-- Group variants always use the `.group` ancestor.
-- The base selector is always emitted.
-- `print` is isolated from interactive pseudo-class variants.
+- Targets such as `.button.active` aren't supported: the generator can't tell
+  which class to modify.
+- Option keys, variant names, and breakpoint names become part of CSS class names.
+  Use valid class-name fragments; the generator doesn't escape spaces, slashes,
+  or punctuation.
 
 ## API reference
 
@@ -447,9 +492,9 @@ produces `.sm\:dark\:text-red` instead. This affects class names, not CSS cascad
 Install dependencies, compile each sample to `samples/css/`, and run the test suite:
 
 ```sh
-pnpm install
-pnpm build:samples
-pnpm test
+npm install
+npm run build:samples
+npm test
 ```
 
 The project is licensed under the [MIT License](LICENSE).
