@@ -7,7 +7,7 @@ on:
       - "[0-9]+.[0-9]+.[0-9]+-[a-z]+.[0-9]+"
 
 permissions:
-  contents: read
+  contents: write
   id-token: write
 
 jobs:
@@ -50,3 +50,9 @@ jobs:
         run: |
           npm_tag=$(node -p "require('./package.json').version.split('+')[0].includes('-') ? 'beta' : 'latest'")
           npm publish --tag "$npm_tag"
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: true
+          prerelease: ${{ contains(github.ref_name, '-') }}
