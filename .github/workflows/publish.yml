@@ -20,11 +20,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v6
-        with:
-          version: 12
-
       - name: Install Node.js
         uses: actions/setup-node@v7
         with:
@@ -32,13 +27,26 @@ jobs:
           registry-url: https://registry.npmjs.org
           package-manager-cache: false
 
+      - name: Check release version
+        run: |
+          package_version=$(node -p "require('./package.json').version")
+          if [[ "$package_version" != "$GITHUB_REF_NAME" ]]; then
+            echo "::error::Git tag $GITHUB_REF_NAME does not match package version $package_version"
+            exit 1
+          fi
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 12
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
       - name: Test (prepublish check)
         run: pnpm test
 
-      - name: Publish to npm
+      - name: Publish package
         run: |
           npm_tag=$(node -p "require('./package.json').version.split('+')[0].includes('-') ? 'beta' : 'latest'")
           npm publish --tag "$npm_tag"
